@@ -54,6 +54,12 @@ function DetailModal({ item, onClose }: Props) {
             <span className="modal-label">Last Moved</span>
             <span>{item.lastMovedAt ? formatDate(item.lastMovedAt) : 'Not yet moved'}</span>
           </div>
+          {item.moveBackReason && (
+            <div className="modal-row">
+              <span className="modal-label">Move Back Reason</span>
+              <span>{item.moveBackReason}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

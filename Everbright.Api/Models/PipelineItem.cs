@@ -19,6 +19,7 @@ public class PipelineItem
     public int SortOrder { get; set; }
     public DateTime? EnteredBacklogAt { get; set; }
     public DateTime? LastMovedAt { get; set; }
+    public string? MoveBackReason { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

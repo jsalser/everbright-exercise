@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react';
-import { canMove, STATUSES } from './types';
+import { canMove, isBackwardMove, STATUSES } from './types';
 import type { PipelineItem, PipelineStatus } from './types';
 import { fetchItems, moveItem } from './api';
 import Column from './Column';
 import DetailModal from './DetailModal';
+import ReasonModal from './ReasonModal';
 import { getHoursInStatus } from './Card';
 import './App.css';
 
 function App() {
   const [items, setItems] = useState<PipelineItem[]>([]);
   const [selected, setSelected] = useState<PipelineItem | null>(null);
+  const [pendingMove, setPendingMove] = useState<{ id: number; status: PipelineStatus } | null>(null);
 
   const load = () => fetchItems().then(setItems);
 
   useEffect(() => { load(); }, []);
 
-  const handleMove = async (id: number, status: PipelineStatus) => {
+  const handleMove = async (id: number, status: PipelineStatus, reason?: string) => {
     const item = items.find(i => i.id === id);
     if (!item) return;
     if (item.status === status) return;
@@ -25,8 +27,12 @@ function App() {
       alert(`Cannot skip stages: ${fromLabel} → ${toLabel}`);
       return;
     }
+    if (isBackwardMove(item.status, status) && !reason) {
+      setPendingMove({ id, status });
+      return;
+    }
     const columnItems = items.filter(i => i.status === status);
-    await moveItem(id, status, columnItems.length);
+    await moveItem(id, status, columnItems.length, reason);
     load();
   };
 
@@ -54,6 +60,15 @@ function App() {
       </div>
       {selected && (
         <DetailModal item={selected} onClose={() => setSelected(null)} />
+      )}
+      {pendingMove && (
+        <ReasonModal
+          onSubmit={(reason) => {
+            handleMove(pendingMove.id, pendingMove.status, reason);
+            setPendingMove(null);
+          }}
+          onCancel={() => setPendingMove(null)}
+        />
       )}
     </div>
   );

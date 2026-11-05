@@ -10,6 +10,7 @@ export interface PipelineItem {
   sortOrder: number;
   enteredBacklogAt?: string;
   lastMovedAt?: string;
+  moveBackReason?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -29,5 +30,10 @@ const STATUS_ORDER: Record<PipelineStatus, number> = {
 };
 
 export function canMove(from: PipelineStatus, to: PipelineStatus): boolean {
-  return STATUS_ORDER[to] <= STATUS_ORDER[from] + 1;
+  const diff = STATUS_ORDER[to] - STATUS_ORDER[from];
+  return diff === 1 || diff < 0;
+}
+
+export function isBackwardMove(from: PipelineStatus, to: PipelineStatus): boolean {
+  return STATUS_ORDER[to] < STATUS_ORDER[from];
 }

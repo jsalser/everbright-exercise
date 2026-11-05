@@ -48,10 +48,13 @@ app.MapPatch("/api/items/{id}/move", async (int id, MoveRequest move, AppDbConte
     var toIdx = (int)move.Status;
     if (toIdx > fromIdx + 1)
         return Results.BadRequest("Cannot skip stages. Move to the next stage first.");
+    if (toIdx < fromIdx && string.IsNullOrWhiteSpace(move.Reason))
+        return Results.BadRequest("A reason is required when moving a patient backward.");
 
     item.Status = move.Status;
     item.SortOrder = move.SortOrder;
     item.LastMovedAt = DateTime.UtcNow;
+    item.MoveBackReason = toIdx < fromIdx ? move.Reason : null;
     item.UpdatedAt = DateTime.UtcNow;
     await db.SaveChangesAsync();
     return Results.Ok(item);
@@ -69,4 +72,4 @@ app.MapDelete("/api/items/{id}", async (int id, AppDbContext db) =>
 
 app.Run();
 
-record MoveRequest(PipelineStatus Status, int SortOrder);
+record MoveRequest(PipelineStatus Status, int SortOrder, string? Reason = null);

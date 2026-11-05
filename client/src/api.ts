@@ -7,13 +7,12 @@ export async function fetchItems(): Promise<PipelineItem[]> {
   return res.json();
 }
 
-export async function moveItem(id: number, status: PipelineStatus, sortOrder: number): Promise<PipelineItem> {
-  const res = await fetch(`${BASE}/items/${id}/move`, {
+export async function moveItem(id: number, status: PipelineStatus, sortOrder: number, reason?: string): Promise<Response> {
+  return fetch(`${BASE}/items/${id}/move`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status, sortOrder }),
+    body: JSON.stringify({ status, sortOrder, reason }),
   });
-  return res.json();
 }
 
 export async function deleteItem(id: number): Promise<void> {

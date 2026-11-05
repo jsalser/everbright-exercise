@@ -3,10 +3,12 @@ import { canMove, STATUSES } from './types';
 import type { PipelineItem, PipelineStatus } from './types';
 import { fetchItems, moveItem } from './api';
 import Column from './Column';
+import DetailModal from './DetailModal';
 import './App.css';
 
 function App() {
   const [items, setItems] = useState<PipelineItem[]>([]);
+  const [selected, setSelected] = useState<PipelineItem | null>(null);
 
   const load = () => fetchItems().then(setItems);
 
@@ -45,9 +47,13 @@ function App() {
             label={col.label}
             items={col.items}
             onMove={handleMove}
+            onSelect={setSelected}
           />
         ))}
       </div>
+      {selected && (
+        <DetailModal item={selected} onClose={() => setSelected(null)} />
+      )}
     </div>
   );
 }

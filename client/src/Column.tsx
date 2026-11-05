@@ -6,9 +6,10 @@ interface Props {
   label: string;
   items: PipelineItem[];
   onMove: (id: number, status: PipelineStatus) => void;
+  onSelect: (item: PipelineItem) => void;
 }
 
-function Column({ status, label, items, onMove }: Props) {
+function Column({ status, label, items, onMove, onSelect }: Props) {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const id = parseInt(e.dataTransfer.getData('text/plain'));
@@ -29,7 +30,7 @@ function Column({ status, label, items, onMove }: Props) {
       </div>
       <div className="cards">
         {items.map(item => (
-          <Card key={item.id} item={item} currentStatus={status} />
+          <Card key={item.id} item={item} currentStatus={status} onSelect={onSelect} />
         ))}
       </div>
     </div>

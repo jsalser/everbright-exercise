@@ -3,8 +3,13 @@ export type PipelineStatus = 'Backlog' | 'Screening' | 'Scheduled' | 'StartedTre
 export interface PipelineItem {
   id: number;
   name: string;
+  treatment?: string;
+  insurance?: string;
+  notes?: string;
   status: PipelineStatus;
   sortOrder: number;
+  enteredBacklogAt?: string;
+  lastMovedAt?: string;
   createdAt: string;
   updatedAt: string;
 }

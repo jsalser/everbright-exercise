@@ -51,6 +51,7 @@ app.MapPatch("/api/items/{id}/move", async (int id, MoveRequest move, AppDbConte
 
     item.Status = move.Status;
     item.SortOrder = move.SortOrder;
+    item.LastMovedAt = DateTime.UtcNow;
     item.UpdatedAt = DateTime.UtcNow;
     await db.SaveChangesAsync();
     return Results.Ok(item);

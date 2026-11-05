@@ -1,0 +1,6 @@
+@Everbright.Api_HostAddress = http://localhost:5128
+
+GET {{Everbright.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

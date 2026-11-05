@@ -1,4 +1,4 @@
-import type { PipelineItem, PipelineStatus } from './types';
+import type { MoveHistoryEntry, PipelineItem, PipelineStatus } from './types';
 
 const BASE = 'http://localhost:5128/api';
 
@@ -15,6 +15,21 @@ export async function moveItem(id: number, status: PipelineStatus, sortOrder: nu
   });
 }
 
-export async function deleteItem(id: number): Promise<void> {
-  await fetch(`${BASE}/items/${id}`, { method: 'DELETE' });
+export async function fetchHistory(id: number): Promise<MoveHistoryEntry[]> {
+  const res = await fetch(`${BASE}/items/${id}/history`);
+  return res.json();
+}
+
+export async function declineItem(id: number, reason: string): Promise<PipelineItem> {
+  const res = await fetch(`${BASE}/items/${id}/decline`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason }),
+  });
+  return res.json();
+}
+
+export async function restoreItem(id: number): Promise<PipelineItem> {
+  const res = await fetch(`${BASE}/items/${id}/restore`, { method: 'PATCH' });
+  return res.json();
 }

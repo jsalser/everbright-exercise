@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { canMove, isBackwardMove, STATUSES } from './types';
-import type { PipelineItem, PipelineStatus } from './types';
+import type { FilterMode, PipelineItem, PipelineStatus } from './types';
 import { fetchItems, moveItem } from './api';
 import Column from './Column';
 import DetailModal from './DetailModal';
@@ -8,10 +8,17 @@ import ReasonModal from './ReasonModal';
 import { getHoursInStatus } from './Card';
 import './App.css';
 
+const FILTERS: { key: FilterMode; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'active', label: 'Active' },
+  { key: 'declined', label: 'Declined' },
+];
+
 function App() {
   const [items, setItems] = useState<PipelineItem[]>([]);
   const [selected, setSelected] = useState<PipelineItem | null>(null);
   const [pendingMove, setPendingMove] = useState<{ id: number; status: PipelineStatus } | null>(null);
+  const [filter, setFilter] = useState<FilterMode>('active');
 
   const load = () => fetchItems().then(setItems);
 
@@ -36,15 +43,35 @@ function App() {
     load();
   };
 
+  const filtered = items.filter(i => {
+    if (filter === 'active') return !i.isDeclined;
+    if (filter === 'declined') return i.isDeclined;
+    return true;
+  });
+
   const grouped = STATUSES.map(s => ({
     ...s,
-    items: items.filter(i => i.status === s.key).sort((a, b) => (getHoursInStatus(b) ?? 0) - (getHoursInStatus(a) ?? 0)),
+    items: filtered
+      .filter(i => i.status === s.key)
+      .sort((a, b) => {
+        if (a.isDeclined !== b.isDeclined) return a.isDeclined ? 1 : -1;
+        return (getHoursInStatus(b) ?? 0) - (getHoursInStatus(a) ?? 0);
+      }),
   }));
 
   return (
     <div className="app">
       <header className="header">
         <h1>Everbright Pipeline</h1>
+        <div className="filter-toggle">
+          {FILTERS.map(f => (
+            <button
+              key={f.key}
+              className={`filter-btn ${filter === f.key ? 'filter-active' : ''}`}
+              onClick={() => setFilter(f.key)}
+            >{f.label}</button>
+          ))}
+        </div>
       </header>
       <div className="board">
         {grouped.map(col => (
@@ -59,7 +86,7 @@ function App() {
         ))}
       </div>
       {selected && (
-        <DetailModal item={selected} onClose={() => setSelected(null)} />
+        <DetailModal item={selected} onClose={() => setSelected(null)} onUpdate={load} />
       )}
       {pendingMove && (
         <ReasonModal

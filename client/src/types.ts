@@ -11,9 +11,22 @@ export interface PipelineItem {
   enteredBacklogAt?: string;
   lastMovedAt?: string;
   moveBackReason?: string;
+  isDeclined: boolean;
+  declinedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
+
+export interface MoveHistoryEntry {
+  id: number;
+  pipelineItemId: number;
+  fromStatus: PipelineStatus;
+  toStatus: PipelineStatus;
+  reason?: string;
+  movedAt: string;
+}
+
+export type FilterMode = 'all' | 'active' | 'declined';
 
 export const STATUSES: { key: PipelineStatus; label: string }[] = [
   { key: 'Backlog', label: 'Backlog' },

@@ -16,7 +16,7 @@ const STATUS_COLORS: Record<PipelineStatus, string> = {
 export function getHoursInStatus(item: PipelineItem): number | null {
   const since = item.status === 'Backlog' ? item.enteredBacklogAt : item.lastMovedAt;
   if (!since) return null;
-  return Math.floor((Date.now() - new Date(since).getTime()) / 3_600_000);
+  return Math.max(0, Math.floor((Date.now() - new Date(since).getTime()) / 3_600_000));
 }
 
 function Card({ item, currentStatus, onSelect }: Props) {
@@ -24,30 +24,37 @@ function Card({ item, currentStatus, onSelect }: Props) {
     e.dataTransfer.setData('text/plain', item.id.toString());
   };
 
-  const color = STATUS_COLORS[currentStatus];
+  const declined = item.isDeclined;
+  const color = declined ? '#94a3b8' : STATUS_COLORS[currentStatus];
   const hours = getHoursInStatus(item);
   const canHighlight: PipelineStatus[] = ['Backlog', 'Screening'];
-  const overdue = hours !== null && hours > 72 && canHighlight.includes(currentStatus);
+  const overdue = !declined && hours !== null && hours > 72 && canHighlight.includes(currentStatus);
 
   return (
     <div
       className="card"
-      draggable
-      onDragStart={handleDragStart}
+      draggable={!declined}
+      onDragStart={declined ? undefined : handleDragStart}
       onClick={() => onSelect(item)}
       style={{
-        background: overdue ? 'rgb(255, 155, 155)' : 'white',
+        background: declined ? '#f1f5f9' : overdue ? 'rgb(255, 155, 155)' : 'white',
         border: `1px solid ${overdue ? '#ef4444' : '#94a3b8'}`,
         borderLeft: `4px solid ${color}`,
         borderRadius: '6px',
         padding: '10px 12px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+        opacity: declined ? 0.5 : 1,
       }}
     >
       <span className="card-name">{item.name}</span>
-      {hours !== null && (
+      {hours !== null && !declined && (
         <div style={{ marginTop: '6px', fontSize: '11px', color: overdue ? '#dc2626' : '#64748b', textAlign: 'right' }}>
           {hours}h
+        </div>
+      )}
+      {declined && (
+        <div style={{ marginTop: '6px', fontSize: '11px', color: '#94a3b8', textAlign: 'right' }}>
+          Declined
         </div>
       )}
     </div>

@@ -20,6 +20,20 @@ public class PipelineItem
     public DateTime? EnteredBacklogAt { get; set; }
     public DateTime? LastMovedAt { get; set; }
     public string? MoveBackReason { get; set; }
+    public bool IsDeclined { get; set; }
+    public DateTime? DeclinedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public List<MoveHistory> History { get; set; } = [];
+}
+
+public class MoveHistory
+{
+    public int Id { get; set; }
+    public int PipelineItemId { get; set; }
+    public PipelineStatus FromStatus { get; set; }
+    public PipelineStatus ToStatus { get; set; }
+    public string? Reason { get; set; }
+    public DateTime MovedAt { get; set; } = DateTime.UtcNow;
 }

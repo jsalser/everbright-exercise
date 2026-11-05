@@ -4,6 +4,7 @@ import type { PipelineItem, PipelineStatus } from './types';
 import { fetchItems, moveItem } from './api';
 import Column from './Column';
 import DetailModal from './DetailModal';
+import { getHoursInStatus } from './Card';
 import './App.css';
 
 function App() {
@@ -31,7 +32,7 @@ function App() {
 
   const grouped = STATUSES.map(s => ({
     ...s,
-    items: items.filter(i => i.status === s.key).sort((a, b) => a.sortOrder - b.sortOrder),
+    items: items.filter(i => i.status === s.key).sort((a, b) => (getHoursInStatus(b) ?? 0) - (getHoursInStatus(a) ?? 0)),
   }));
 
   return (

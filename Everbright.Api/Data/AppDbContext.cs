@@ -1,4 +1,4 @@
-using Everbright.Api.Models;
+using Everbright.Api.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace Everbright.Api.Data;

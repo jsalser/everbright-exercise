@@ -47,3 +47,15 @@ Requires: .NET 10 SDK, Node.js 18+. SQLite DB is auto-created on first run.
 
 **Detail Modal**
 - Click any card to view: status, treatment, insurance, notes, dates, move history
+
+## Scope Cuts & What's Next
+
+TODO
+
+## AI Tool Usage
+
+TODO
+
+## Reasoning & Tradeoffs
+
+TODO

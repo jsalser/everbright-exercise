@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Everbright.Api.Data;
-using Everbright.Api.Models;
+using Everbright.Api.Domain;
+using Everbright.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,9 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader()
               .AllowAnyMethod()));
 
+builder.Services.AddScoped<PipelineService>();
+builder.Services.AddSingleton<DomainEventDispatcher>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -35,13 +39,10 @@ app.UseCors();
 // TODO: add authentication/authorization — all endpoints are currently anonymous
 // TODO: add structured logging for moves, declines, and errors
 
-// TODO: endpoint handlers contain inline business logic — extract to a domain service layer
-// with explicit transaction boundaries and rollback handling
+app.MapGet("/api/items", async (PipelineService svc) =>
+    await svc.GetAllAsync());
 
-app.MapGet("/api/items", async (AppDbContext db) =>
-    await db.PipelineItems.OrderBy(i => i.SortOrder).ToListAsync());
-
-// TODO: add input validation (FluentValidation or data annotations) — no model validation on any endpoint
+// TODO: add input validation (FluentValidation or data annotations)
 app.MapPost("/api/items", async (PipelineItem item, AppDbContext db) =>
 {
     item.CreatedAt = DateTime.UtcNow;
@@ -51,81 +52,43 @@ app.MapPost("/api/items", async (PipelineItem item, AppDbContext db) =>
     return Results.Created($"/api/items/{item.Id}", item);
 });
 
-// TODO: add optimistic concurrency (ETag/row version) to prevent race conditions on concurrent moves
-app.MapPatch("/api/items/{id}/move", async (int id, MoveRequest move, AppDbContext db) =>
+// TODO: add optimistic concurrency (ETag/row version) to prevent race conditions
+app.MapPatch("/api/items/{id}/move", async (int id, MoveRequest move, PipelineService svc) =>
 {
-    var item = await db.PipelineItems.FindAsync(id);
-    if (item is null) return Results.NotFound();
-
-    var fromIdx = (int)item.Status;
-    var toIdx = (int)move.Status;
-    if (toIdx > fromIdx + 1)
-        return Results.BadRequest("Cannot skip stages. Move to the next stage first.");
-    if (toIdx < fromIdx && string.IsNullOrWhiteSpace(move.Reason))
-        return Results.BadRequest("A reason is required when moving a patient backward.");
-
-    db.MoveHistory.Add(new MoveHistory
+    try
     {
-        PipelineItemId = item.Id,
-        FromStatus = item.Status,
-        ToStatus = move.Status,
-        Reason = move.Reason,
-        MovedAt = DateTime.UtcNow,
-    });
-
-    item.Status = move.Status;
-    item.SortOrder = move.SortOrder;
-    item.LastMovedAt = DateTime.UtcNow;
-    item.MoveBackReason = toIdx < fromIdx ? move.Reason : null;
-    item.UpdatedAt = DateTime.UtcNow;
-    await db.SaveChangesAsync();
-    return Results.Ok(item);
+        var item = await svc.MoveAsync(id, move.Status, move.SortOrder, move.Reason);
+        return item is null ? Results.NotFound() : Results.Ok(item);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
-app.MapGet("/api/items/{id}/history", async (int id, AppDbContext db) =>
+app.MapGet("/api/items/{id}/history", async (int id, PipelineService svc) =>
 {
-    var item = await db.PipelineItems.FindAsync(id);
-    if (item is null) return Results.NotFound();
-    var history = await db.MoveHistory
-        .Where(h => h.PipelineItemId == id)
-        .OrderByDescending(h => h.MovedAt)
-        .ToListAsync();
+    var history = await svc.GetHistoryAsync(id);
     return Results.Ok(history);
 });
 
-app.MapPatch("/api/items/{id}/decline", async (int id, DeclineRequest req, AppDbContext db) =>
+app.MapPatch("/api/items/{id}/decline", async (int id, DeclineRequest req, PipelineService svc) =>
 {
-    var item = await db.PipelineItems.FindAsync(id);
-    if (item is null) return Results.NotFound();
-    if (string.IsNullOrWhiteSpace(req.Reason))
-        return Results.BadRequest("A reason is required when removing a patient.");
-
-    db.MoveHistory.Add(new MoveHistory
+    try
     {
-        PipelineItemId = item.Id,
-        FromStatus = item.Status,
-        ToStatus = item.Status,
-        Reason = $"Removed: {req.Reason}",
-        MovedAt = DateTime.UtcNow,
-    });
-
-    item.IsDeclined = true;
-    item.DeclinedAt = DateTime.UtcNow;
-    item.UpdatedAt = DateTime.UtcNow;
-    await db.SaveChangesAsync();
-    return Results.Ok(item);
+        var item = await svc.DeclineAsync(id, req.Reason ?? "");
+        return item is null ? Results.NotFound() : Results.Ok(item);
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
 });
 
-app.MapPatch("/api/items/{id}/restore", async (int id, AppDbContext db) =>
+app.MapPatch("/api/items/{id}/restore", async (int id, PipelineService svc) =>
 {
-    var item = await db.PipelineItems.FindAsync(id);
-    if (item is null) return Results.NotFound();
-
-    item.IsDeclined = false;
-    item.DeclinedAt = null;
-    item.UpdatedAt = DateTime.UtcNow;
-    await db.SaveChangesAsync();
-    return Results.Ok(item);
+    var item = await svc.RestoreAsync(id);
+    return item is null ? Results.NotFound() : Results.Ok(item);
 });
 
 // TODO: hard delete contradicts "declined but tracked" — consider removing or restricting to admin

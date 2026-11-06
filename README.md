@@ -58,8 +58,13 @@ Built with Claude Code (Claude Opus). AI agents are a tremendous boost so long a
 
 **Backward moves are unrestricted in distance.** Forward moves enforce one-step-at-a-time; backward moves can jump multiple stages. Going back is corrective, not progressive — requiring a patient to step through each intermediate stage on the way back adds friction without value.
 
+**72-hour stuck threshold** — long enough to avoid noise, short enough to surface patients needing attention. Would be configurable in production.
+
 **SQLite** for zero-config local setup. Swap to Postgres for production.
 
 **Minimal API over controllers** — faster to scaffold at this scale. Controllers make more sense as the API grows.
 
-**72-hour stuck threshold** — long enough to avoid noise, short enough to surface patients needing attention. Would be configurable in production.
+**Open questions:**
+- The pipeline ends at Started Treatment — what happens when a patient finishes? A Completed stage (distinct from declined/removed) would close the loop and distinguish successful outcomes from removals.
+- Could a patient be on multiple treatments simultaneously (e.g. TMS and Spravato), or switch between them mid-pipeline? The current model assumes one treatment per patient and a single linear path.
+- What volume should the board support? The seed data is 8 patients, but a busy clinic might have hundreds in-flight — that would change pagination, search, and layout decisions.

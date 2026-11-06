@@ -43,18 +43,18 @@ Built with Claude Code (Claude Opus). AI agents are a tremendous boost so long a
 
 **Where I corrected the model:**
 - Would commit and push without being asked — had to enforce explicit instruction only.
-- Misdiagnosed a card visibility bug as "working correctly" from headless screenshots. Actual cause: CSS class properties overriding inline styles. Took several rounds of pushback.
-- Kept choosing near-invisible reds (#fef2f2, #fee2e2). Had to manually dial in the RGB value.
+- Misdiagnosed a card visibility bug as "working correctly" from headless screenshots. Actual cause: CSS class properties overriding inline styles. Took several rounds of pushback — used Chrome DevTools to inspect the DOM and explain what differed from expectations at the element level.
+- Kept choosing near-invisible reds (#fef2f2, #fee2e2). Had to manually dial in the RGB value using DevTools.
 
 ## Reasoning & Tradeoffs
 
-**All four bonuses, not one polished.** The spec says pick one or none. AI-assisted throughput made breadth realistic, and none are half-baked — each is functional and demonstrable.
+**All four bonuses, not one polished.** The spec says pick one or none. CRUD kanban features like these are squarely in an AI model's wheelhouse — the kind of work where heavy AI assistance pays off with light guidance. The tradeoff changes when the problem domain gets harder; something like wiring up an LLP transport for HL7 or hardening a container would demand much more hands-on steering, and I'd narrow scope accordingly.
 
 **Architecture:** Simplified DDD — thin API endpoints → service layer (`PipelineService`) → domain entity (`PipelineItem`). No distinct application layer; cross-cutting concerns (auth, validation, error mapping) are inline or noted as TODOs. Production would add that layer between API and service.
 
 **Domain events** dispatched synchronously inline before `SaveChangesAsync()` — state change and history write in the same transaction. Production would use MediatR or an outbox.
 
-**Declined stays in-column, not removed from board.** The spec says "removed from the board but remain tracked." Keeping them visible but grayed out is better for clinical workflows — you see a patient's last stage at a glance instead of hunting through a separate list.
+**Declined stays in-column, not removed from board.** The spec says "removed from the board but remain tracked." There are many ways to handle this — another option considered was splitting the board into sections (high priority, normal priority, declined) so declined patients stay visible without cluttering the active view. Went with grayed-out in-column because it preserves the patient's last stage at a glance, and the filter toggle gives a clean active-only view when you don't need to see them.
 
 **Backward moves are unrestricted in distance.** Forward moves enforce one-step-at-a-time; backward moves can jump multiple stages. Going back is corrective, not progressive — requiring a patient to step through each intermediate stage on the way back adds friction without value.
 
